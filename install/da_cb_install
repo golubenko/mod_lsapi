@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Copyright 2014-2015 Cloud Linux Zug GmbH
+#
+# Licensed under CLOUD LINUX LICENSE AGREEMENT
+# http://cloudlinux.com/docs/LICENSE.TXT
+
+SOCKPATH="/var/run/mod_lsapi"
+
+yum install -y liblsapi liblsapi-devel --enablerepo=cloudlinux-updates-testing
+
+if [ ! -e /etc/cl.selector/lsphp -a -e /usr/sbin/cagefsctl -a -e /etc/cl.selector ]; then
+    ln -s /usr/local/bin/lsphp /etc/cl.selector/lsphp
+    /usr/sbin/cagefsctl --update-etc
+    RES=`cat /etc/cl.selector/native.conf | grep lsphp=/usr/local/bin/lsphp `
+    if [ -z "$RES" ]; then
+        echo "lsphp=/usr/local/bin/lsphp" >> /etc/cl.selector/native.conf
+    fi
+    /usr/sbin/cagefsctl --setup-cl-selector
+
+    echo "Reconfiguration completed"
+fi
+
+if [ ! -e "$SOCKPATH" ]; then
+    mkdir -p "$SOCKPATH"   
+fi
+
+chown apache:apache "$SOCKPATH"
+chmod 755 "$SOCKPATH"
+
