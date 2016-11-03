@@ -20,7 +20,7 @@
 #define PREFIX "mod_lsapi: "
 #define MOD_LSAPI_VERSION MOD_LSAPI_VERSION_MAJOR "." MOD_LSAPI_VERSION_MINOR "-" MOD_LSAPI_VERSION_RELEASE
 
-static int with_connection_pool = 1;
+static int with_connection_pool = 0;
 
 module AP_MODULE_DECLARE_DATA lsapi_module;
 
@@ -249,6 +249,11 @@ static apr_status_t lsapi_handler(request_rec * r)
     lsphp_conn_t *backend;
     lsapi_svr_conf_t *svrcfg = ap_get_module_config(r->server->module_config, &lsapi_module);
     lsapi_dir_conf_t *dircfg = (lsapi_dir_conf_t*) ap_get_module_config(r->per_dir_config, &lsapi_module);
+
+    if(dircfg->engine_off)
+    {
+        return DECLINED;
+    }
 
     const char *backend_path = lscapi_get_backend(r->handler);
     if(!backend_path)
@@ -701,7 +706,20 @@ static const char *lsapi_with_connection_pool_handler(cmd_parms *cmd, void *dumm
       return err;
     }
 
-    with_connection_pool = ( strcasecmp(value, "off") != 0 );
+    if(strcasecmp(value, "off") == 0)
+        with_connection_pool = 0;
+    else if(strcasecmp(value, "on") == 0)
+        with_connection_pool = 1;
+
+    return NULL;
+}
+
+
+static const char *lsapi_engine_handler(cmd_parms *cmd, void *CFG, const char *value) {
+    lsapi_dir_conf_t* cfg = (lsapi_dir_conf_t*)CFG;
+    cfg->engine_off = ( strcasecmp(value, "off") == 0 );
+    cfg->engine_off_was_set = 1;
+    
     return NULL;
 }
 
@@ -1213,6 +1231,7 @@ static const command_rec config_directives[] = {
     AP_INIT_TAKE1("lsapi_tmpdir", lsapi_tmpdir_handler, NULL, RSRC_CONF, "Set tmpdir to create temporary files per request body in"),
     AP_INIT_TAKE2("lsapi_error_code", lsapi_error_code_handler, NULL, RSRC_CONF | ACCESS_CONF,
                   "Error codes used in response to client"),
+    AP_INIT_TAKE1("lsapi_engine", lsapi_engine_handler, NULL, OR_OPTIONS, "Switching mod_lsapi handler on or off."),
 
     /*
      * SU PHP param will be used too as fallback

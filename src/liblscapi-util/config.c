@@ -189,6 +189,14 @@ void *lscapi_merge_dir_config(apr_pool_t *pool, void *BASE, void *CUR) {
                              cur->resend_if_crashed : base->resend_if_crashed;
     cfg->dir_accept_notify = cur->dir_accept_notify_was_set ?
                             cur->dir_accept_notify : base->dir_accept_notify;
+    
+    if(cur->engine_off_was_set) {
+        cfg->engine_off = cur->engine_off;
+        cfg->engine_off_was_set = 1;
+    } else {
+        cfg->engine_off = base->engine_off;
+    }
+
     cfg->mod_php_behaviour_off = cur->mod_php_behaviour_off_was_set ?
                             cur->mod_php_behaviour_off : base->mod_php_behaviour_off;
     cfg->resend_if_method = cur->resend_if_method_was_set ?

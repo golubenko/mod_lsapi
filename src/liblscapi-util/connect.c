@@ -571,8 +571,14 @@ lscapi_rec *lscapi_create_connection(request_rec *r, const char *backend_path,
       https://www.apache.org/security/asf-httpoxy-response.txt
     */
     apr_table_unset(r->subprocess_env, "HTTP_PROXY");
+
+    /*
+      These ones can be allowed by CGIPassAuth Apache directive. So let them be
+    */
+    /*
     apr_table_unset(r->subprocess_env, "HTTP_PROXY_AUTHORIZATION");
     apr_table_unset(r->subprocess_env, "HTTP_AUTHORIZATION");
+    */
 
     set_auth(r);
 

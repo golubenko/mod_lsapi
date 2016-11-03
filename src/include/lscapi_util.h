@@ -147,10 +147,12 @@ struct lsapi_dir_conf_t {
 
     unsigned mod_php_behaviour_off: 1;
     unsigned dir_accept_notify: 1;
+    unsigned engine_off: 1;
     unsigned resend_if_crashed: 3; // up to 7 times (as 2³-1)
 
     unsigned mod_php_behaviour_off_was_set: 1;
     unsigned dir_accept_notify_was_set: 1;
+    unsigned engine_off_was_set: 1;
     unsigned resend_if_crashed_was_set: 1;
     unsigned resend_if_method_was_set: 1;
 

@@ -48,12 +48,19 @@ static int processServerVar(struct lscapi_server_vars_t *vars, const char *key, 
     if(strcmp(key, "HTTP_PROXY") == 0) {
         return 1;
     }
+
+
+    /*
+      These ones can be allowed by CGIPassAuth Apache directive. So let them be
+    */
+    /*
     if(strcmp(key, "HTTP_PROXY_AUTHORIZATION") == 0) {
         return 1;
     }
     if(strcmp(key, "HTTP_AUTHORIZATION") == 0) {
         return 1;
     }
+    */
 
     const char *v;
     if(strcmp(key, "PATH") == 0) {
