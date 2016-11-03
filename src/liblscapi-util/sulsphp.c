@@ -550,25 +550,56 @@ static int close_sockets(server_rec *s, int log_sock)
     return 0;
 }
 
-static void make_custom_env(server_rec *s, apr_table_t *envTable, char *buf, size_t bufLen, int *envLenPtr, int *envNumPtr)
+static void make_custom_env(server_rec *s, apr_table_t *envTable, 
+                            char **origEnv,
+                            char *buf, size_t bufLen, 
+                            int *envLenPtr, int *envNumPtr)
 {
     const apr_array_header_t *arr = apr_table_elts(envTable);
     const apr_table_entry_t *elt = (apr_table_entry_t *)arr->elts;
-    int i;
+    int i, j;
     size_t usedLen = 0;
  
     for (i = 0; i < arr->nelts; ++i) {
         size_t keyLen = strlen(elt[i].key);
         size_t valLen = strlen(elt[i].val);
+        char *keyPtr = elt[i].key;
+        char *valPtr = elt[i].val;
+        
+        if(valLen > 3 && valPtr[0] == '$' && valPtr[1] == '{' && valPtr[valLen-1] == '}')
+        {
+            // special case, substitute val with value from origEnv
+            char *findKey = valPtr + 2;
+            int findKeyLen = valLen - 3;
+            int foundIt = 0;
+            for(j = 0; origEnv[j] != NULL; j++)
+            {
+                int curLen = strlen(origEnv[j]);
+                if(curLen > findKeyLen 
+                   && memcmp(origEnv[j], findKey, findKeyLen) == 0 
+                   && origEnv[j][findKeyLen] == '=')
+                {
+                    valPtr = origEnv[j] + findKeyLen + 1;
+                    valLen = curLen - findKeyLen - 1;
+                    foundIt = 1;
+                    break;
+                }
+            }
+            if(!foundIt)
+            {
+                valPtr = "";
+                valLen = 0;
+            }
+        }
         
         // no space even for current env in format KEY=VAL<NUL> - ignore all
         if(bufLen - usedLen < keyLen + valLen + 2)
             return;
         //lscapi_log(APLOG_NOTICE, 0, s, "make_custom_env: %d: key(%s); val(%s); len %lu/%lu", 
         //           i, elt[i].key, elt[i].val, usedLen, bufLen);
-        memcpy(buf+usedLen, elt[i].key, keyLen); usedLen += keyLen;
+        memcpy(buf+usedLen, keyPtr, keyLen); usedLen += keyLen;
         buf[usedLen++] = '=';
-        memcpy(buf+usedLen, elt[i].val, valLen+1); usedLen += valLen+1;
+        memcpy(buf+usedLen, valPtr, valLen+1); usedLen += valLen+1;
     }
     *envLenPtr = usedLen;
     *envNumPtr = arr->nelts;
@@ -605,7 +636,7 @@ void lscapi_spawn_lsphp(server_rec *s, spawn_info_t *spawn_info, int log_sock)
 
     lsapi_svr_conf_t *cfg = lsapi_get_svr_config(s);
 
-    make_custom_env(s, cfg->envTable, custom_env, sizeof custom_env, &envLen, &envNum);
+    make_custom_env(s, cfg->envTable, environ, custom_env, sizeof custom_env, &envLen, &envNum);
     
     const char *path = cfg->backend_env_path ? cfg->backend_env_path : SULSPHP_SAFE_PATH;
 

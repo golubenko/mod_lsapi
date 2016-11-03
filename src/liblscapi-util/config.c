@@ -119,8 +119,14 @@ static apr_hash_t* merge_php_params(apr_pool_t *pool, apr_hash_t *baseH, apr_has
     return newH;
 }
 
-#define __LSAPI_MERGE_ERR_CONFIG(nm) cfg->nm = cur->nm##_was_set ? \
-                            cur->nm : base->nm
+#define __LSAPI_MERGE_ERR_CONFIG(nm) do { \
+    if(cur->nm##_was_set) { \
+        cfg->nm = cur->nm; \
+        cfg->nm##_was_set = 1; \
+    } else { \
+        cfg->nm = base->nm; \
+    } \
+} while(0)
 
 static void merge_err_config(lsapi_dir_conf_t *cfg, lsapi_dir_conf_t *cur, lsapi_dir_conf_t *base)
 {
@@ -144,6 +150,15 @@ static void merge_err_config(lsapi_dir_conf_t *cfg, lsapi_dir_conf_t *cur, lsapi
 }
 
 #undef __LSAPI_MERGE_ERR_CONFIG
+
+#define __LSAPI_MERGE_DIR_CONFIG(nm) do { \
+    if(cur->nm##_was_set) { \
+        cfg->nm = cur->nm; \
+        cfg->nm##_was_set = 1; \
+    } else { \
+        cfg->nm = base->nm; \
+    } \
+} while(0)
 
 void *lscapi_merge_dir_config(apr_pool_t *pool, void *BASE, void *CUR) {
     lsapi_dir_conf_t *base = BASE;
@@ -185,22 +200,11 @@ void *lscapi_merge_dir_config(apr_pool_t *pool, void *BASE, void *CUR) {
         cfg->itk_gid = base->itk_gid;
     }
 
-    cfg->resend_if_crashed = cur->resend_if_crashed_was_set ?
-                             cur->resend_if_crashed : base->resend_if_crashed;
-    cfg->dir_accept_notify = cur->dir_accept_notify_was_set ?
-                            cur->dir_accept_notify : base->dir_accept_notify;
-
-    if(cur->engine_off_was_set) {
-        cfg->engine_off = cur->engine_off;
-        cfg->engine_off_was_set = 1;
-    } else {
-        cfg->engine_off = base->engine_off;
-    }
-
-    cfg->mod_php_behaviour_off = cur->mod_php_behaviour_off_was_set ?
-                            cur->mod_php_behaviour_off : base->mod_php_behaviour_off;
-    cfg->resend_if_method = cur->resend_if_method_was_set ?
-                            cur->resend_if_method : base->resend_if_method;
+    __LSAPI_MERGE_DIR_CONFIG(resend_if_crashed);
+    __LSAPI_MERGE_DIR_CONFIG(dir_accept_notify);
+    __LSAPI_MERGE_DIR_CONFIG(engine_off);
+    __LSAPI_MERGE_DIR_CONFIG(mod_php_behaviour_off);
+    __LSAPI_MERGE_DIR_CONFIG(resend_if_method);
 
     cfg->path_regex = cur->path_regex ? cur->path_regex : base->path_regex;
 
@@ -208,6 +212,8 @@ void *lscapi_merge_dir_config(apr_pool_t *pool, void *BASE, void *CUR) {
 
     return cfg;
 }
+
+#undef __LSAPI_MERGE_DIR_CONFIG
 
 char* lscapi_make_fname_in_logdir(server_rec *s, apr_pool_t *pool, const char *fname) {
     if(!s->error_fname || s->error_fname[0] == '|' || !strcmp(s->error_fname, "syslog") ) {
@@ -279,6 +285,16 @@ static apr_table_t* merge_env_tables(apr_pool_t *pool, apr_table_t *baseT, apr_t
     return newT;
 }
 
+#define __LSAPI_MERGE_SVR_CONFIG(nm) do { \
+    if(cur->nm##_was_set) { \
+        cfg->nm = cur->nm; \
+        cfg->nm##_was_set = 1; \
+    } else { \
+        cfg->nm = base->nm; \
+    } \
+} while(0)
+
+
 void *lscapi_merge_svr_config(apr_pool_t *pool, void *BASE, void *CUR) {
     lsapi_svr_conf_t *base = BASE;
     lsapi_svr_conf_t *cur = CUR;
@@ -290,24 +306,12 @@ void *lscapi_merge_svr_config(apr_pool_t *pool, void *BASE, void *CUR) {
     cfg->socket_path = cur->socket_path ?
                             cur->socket_path : base->socket_path;
 
-    cfg->terminate_backends_on_exit = cur->terminate_backends_was_set ?
-                            cur->terminate_backends_on_exit : base->terminate_backends_on_exit;
-
-    cfg->debug_enabled = cur->debug_enabled_was_set ?
-                            cur->debug_enabled : base->debug_enabled;
-
-    cfg->check_target_perm = cur->check_target_perm_was_set ?
-                            cur->check_target_perm : base->check_target_perm;
-
-    cfg->paranoid = cur->paranoid_was_set ?
-                            cur->paranoid : base->paranoid;
-
-    cfg->use_default_uid = cur->use_default_uid_was_set ?
-                            cur->use_default_uid : base->use_default_uid;
-
-    cfg->skip_check_document_root = cur->skip_check_document_root_was_set ?
-                            cur->skip_check_document_root : base->skip_check_document_root;
-
+    __LSAPI_MERGE_SVR_CONFIG(terminate_backends_on_exit);
+    __LSAPI_MERGE_SVR_CONFIG(debug_enabled);
+    __LSAPI_MERGE_SVR_CONFIG(check_target_perm);
+    __LSAPI_MERGE_SVR_CONFIG(paranoid);
+    __LSAPI_MERGE_SVR_CONFIG(use_default_uid);
+    __LSAPI_MERGE_SVR_CONFIG(skip_check_document_root);
     cfg->hostname_on_debug = cur->hostname_on_debug ?
                                 cur->hostname_on_debug : base->hostname_on_debug;
 
@@ -331,6 +335,9 @@ void *lscapi_merge_svr_config(apr_pool_t *pool, void *BASE, void *CUR) {
 
     return cfg;
 }
+
+#undef __LSAPI_MERGE_SVR_CONFIG
+
 
 apr_hash_t *lscapi_parse_cfg_resend_if_method(const char *value, apr_pool_t *pool)
 {

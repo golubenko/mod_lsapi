@@ -531,7 +531,7 @@ static const char *lsapi_terminate_backends_on_exit_handler(cmd_parms *cmd, void
     lsapi_svr_conf_t *cfg = ap_get_module_config(cmd->server->module_config, &lsapi_module);
 
     cfg->terminate_backends_on_exit = ( strcasecmp(value, "off") != 0 );
-    cfg->terminate_backends_was_set = 1;
+    cfg->terminate_backends_on_exit_was_set = 1;
 
     return NULL;
 }

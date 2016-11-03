@@ -103,7 +103,7 @@ struct lsapi_svr_conf_t {
     unsigned phprc_source:2;
 
     unsigned debug_enabled_was_set:1;
-    unsigned terminate_backends_was_set: 1;
+    unsigned terminate_backends_on_exit_was_set: 1;
     unsigned check_target_perm_was_set: 1;
     unsigned paranoid_was_set: 1;
     unsigned use_default_uid_was_set:1;
