@@ -188,52 +188,6 @@ apr_status_t lscapi_util_child_init(apr_pool_t *configpool, server_rec *s)
 #endif
 
 
-/*
-#ifdef LSCAPI_WITH_RANDOM_SOCKET_NAMES
-static int lscapi_get_socket_suffix(lscapi_rec *lscapi, uint32_t uid, uint32_t gid,
-                                        request_rec *r, lsapi_svr_conf_t *svrcfg,
-                                        char *_buf, size_t bufLen) {
-
-    if(svrcfg->terminate_backends_on_exit) {
-
-        if(bufLen < LSCAPI_ENCODED_SHA1_SIGN_WITHOUT_SALT_SIZE) {
-            return -1;
-        }
-
-        uint32_t uidgid[2];
-        uidgid[0] = uid;
-        uidgid[1] = gid;
-        uint8_t sign[LSCAPI_SHA1_SIGN_SIZE];
-
-        lscapi_sign_uidgid_sha1(lscapi, uidgid, global_salt, sign);
-        lscapi_encode_sha1_sign_without_salt(sign, _buf);
-
-    } else { // if(svrcfg->terminate_backends_on_exit)
-
-        char uidbuf[64];
-        snprintf(uidbuf, sizeof uidbuf, "%u", uid);
-        size_t uidLen = strlen(uidbuf);
-
-        size_t len = strlen(r->handler);
-
-        if(len + uidLen + 2 > bufLen) {
-            return -1;
-        }
-
-        memcpy(_buf, r->handler, len);
-        for(int i = 0; i < len; i++) {
-            if(_buf[i] == '/') _buf[i] = '-';
-        }
-        _buf[len++] = '_';
-        memcpy(_buf+len, uidbuf, uidLen+1);
-
-    } // else of if(svrcfg->terminate_backends_on_exit)
-
-    return 0;
-}
-#endif
-*/
-
 static apr_status_t check_script_file(request_rec *r, uint32_t uid, uint32_t gid,
                                       lsapi_dir_conf_t* cfg,
                                       int check_document_root, int check_owner, int paranoid, 

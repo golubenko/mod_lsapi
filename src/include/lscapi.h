@@ -169,10 +169,12 @@ struct lscapi_backend_info_t {
     unsigned backend_coredump: 1;
     unsigned dump_backend_debug_info: 1;
     unsigned use_suexec: 1;
+    unsigned per_user: 1;
 
     unsigned backend_coredump_was_set: 1;
     unsigned dump_backend_debug_info_was_set: 1;
     unsigned use_suexec_was_set: 1;
+    unsigned per_user_was_set: 1;
 
     /*
         Define these fields unconditionally though they will be used in fact 

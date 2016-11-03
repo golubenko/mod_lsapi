@@ -293,26 +293,6 @@ static apr_status_t lsapi_handler(request_rec * r)
         return dircfg->err_client_setup; //HTTP_BAD_REQUEST
     }
 
-/*
-#ifdef LSCAPI_WITH_RANDOM_SOCKET_NAMES
-    char suffix[128];
-    status = lscapi_get_socket_suffix(lscapi, lveuid, lvegid, r, svrcfg, suffix, sizeof suffix );
-    if(status != 0) {
-        ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
-                      PREFIX "[host %s] Could not get socket suffix", r->hostname);
-        lscapi_destroy(lscapi);
-        return HTTP_INTERNAL_SERVER_ERROR; //error from lscapi_get_socket_suffix is (almost) impossible
-    }
-
-    status = lscapi_determine_conn_lsphp_ex(backend, &(svrcfg->backend_info), suffix, errbuf, sizeof errbuf);
-    if(status != 0) {
-        ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
-                      PREFIX "[host %s] Could not determine lsphp connection: %s", r->hostname, errbuf );
-        lscapi_destroy(lscapi);
-        return HTTP_SERVICE_UNAVAILABLE;
-     }
-#else
-*/
      status = lscapi_determine_conn_lsphp(backend, &(svrcfg->backend_info), errbuf, sizeof errbuf);
      if(status != 0) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
@@ -321,9 +301,6 @@ static apr_status_t lsapi_handler(request_rec * r)
         lscapi_destroy(lscapi);
         return dircfg->err_lsapi_conn_determine; //HTTP_SERVICE_UNAVAILABLE
      }
-/*
-#endif
-*/
     status = talk_to_backend(backend, r, lscapi, svrcfg, dircfg);
 
     lscapi_destroy(lscapi);
@@ -802,6 +779,13 @@ static const char *lsapi_backend_use_own_log_handler(cmd_parms *cmd, void *CFG, 
     return NULL;
 }
 
+static const char *lsapi_per_user_handler(cmd_parms *cmd, void *CFG, const char *value) {
+    lsapi_svr_conf_t *cfg = ap_get_module_config(cmd->server->module_config, &lsapi_module);
+    cfg->backend_info.per_user = ( strcasecmp(value, "on") == 0 );
+    cfg->backend_info.per_user_was_set = 1;
+    return NULL;
+}
+
 static const char *lsapi_resend_if_crashed_handler(cmd_parms *cmd, void* CFG, const char *arg1)
 {
     lsapi_dir_conf_t* cfg = (lsapi_dir_conf_t*)CFG;
@@ -1216,6 +1200,7 @@ static const command_rec config_directives[] = {
     // Not documented
     AP_INIT_TAKE1("lsapi_hostname_on_debug", lsapi_hostname_on_debug_handler, NULL, RSRC_CONF, "Dump or not failed response header"),
 #endif
+    AP_INIT_TAKE1("lsapi_per_user", lsapi_per_user_handler, NULL, RSRC_CONF, "Invoke backend not per VirtualHost but per account"),
 #ifdef WITH_CRIU
     AP_INIT_TAKE1("lsapi_criu", lsapi_criu_handler, NULL, RSRC_CONF, "Use or not criu"),
     AP_INIT_TAKE1("lsapi_criu_socket_path", lsapi_criu_socket_path_handler, NULL, RSRC_CONF, "Path to criu service socket"),
