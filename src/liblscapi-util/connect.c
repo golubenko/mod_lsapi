@@ -443,17 +443,29 @@ static apr_status_t get_uid_gid(request_rec *r, lsapi_svr_conf_t *svrcfg, lsapi_
         //ap_log_rerror(APLOG_MARK, LOG_DEBUG, 0, r, "ugid is absent");
         return APR_EGENERAL;
     }
-    
+
     return APR_SUCCESS;
 }
 
 
 static const char* get_phprc(request_rec *r, lsapi_svr_conf_t *svrcfg, uint32_t lveuid)
 {
-    if(!svrcfg->phprc_auto)
+    if(svrcfg->phprc_source == LSAPI_PHPRC_SOURCE_NO)
+    {
+        return NULL;
+    }
+
+    if(svrcfg->phprc_source == LSAPI_PHPRC_SOURCE_VAL)
     {
         return svrcfg->phprc;
     }
+
+    if(svrcfg->phprc_source == LSAPI_PHPRC_SOURCE_ENV)
+    {
+        return apr_table_get(r->subprocess_env, "PHPRC");
+    }
+
+    // if(svrcfg->phprc_source == LSAPI_PHPRC_SOURCE_AUTO)
 
     const char *docroot;
     size_t docroot_len;

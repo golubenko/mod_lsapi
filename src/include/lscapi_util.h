@@ -61,6 +61,14 @@ extern const int *lsapilog_module_index;
 extern int lsapi_use_perflog;
 #endif // WITH_LIBPERFLOG
 
+enum {
+   LSAPI_PHPRC_SOURCE_NO = 0,
+   LSAPI_PHPRC_SOURCE_VAL,
+   LSAPI_PHPRC_SOURCE_AUTO,
+   LSAPI_PHPRC_SOURCE_ENV
+};
+
+
 struct lsapi_svr_conf_t {
     char *socket_path;
     char *phprc;
@@ -92,7 +100,7 @@ struct lsapi_svr_conf_t {
     unsigned paranoid: 1;
     unsigned use_default_uid:1;
     unsigned skip_check_document_root:1;
-    unsigned phprc_auto:1;
+    unsigned phprc_source:2;
 
     unsigned debug_enabled_was_set:1;
     unsigned terminate_backends_was_set: 1;
@@ -100,7 +108,7 @@ struct lsapi_svr_conf_t {
     unsigned paranoid_was_set: 1;
     unsigned use_default_uid_was_set:1;
     unsigned skip_check_document_root_was_set:1;
-    unsigned phprc_auto_was_set:1;
+    unsigned phprc_source_was_set:1;
 };
 typedef struct lsapi_svr_conf_t lsapi_svr_conf_t;
 

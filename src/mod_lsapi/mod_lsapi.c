@@ -569,15 +569,18 @@ static const char *lsapi_phprc_handler(cmd_parms *cmd, void *dummy, const char *
     lsapi_svr_conf_t *cfg = ap_get_module_config(cmd->server->module_config, &lsapi_module);
     if(strcasecmp(value, "no") == 0) {
         cfg->phprc = NULL;
-        cfg->phprc_auto = 0;
+        cfg->phprc_source = LSAPI_PHPRC_SOURCE_NO;
     } else if(strcasecmp(value, "auto") == 0) {
         cfg->phprc = NULL;
-        cfg->phprc_auto = 1;
+        cfg->phprc_source = LSAPI_PHPRC_SOURCE_AUTO;
+    } else if(strcasecmp(value, "env") == 0) {
+        cfg->phprc = NULL;
+        cfg->phprc_source = LSAPI_PHPRC_SOURCE_ENV;
     } else {
         cfg->phprc = apr_pstrdup(cmd->pool, value);
-        cfg->phprc_auto = 0;
+        cfg->phprc_source = LSAPI_PHPRC_SOURCE_VAL;
     }
-    cfg->phprc_auto_was_set = 1;
+    cfg->phprc_source_was_set = 1;
     return NULL;
 }
 

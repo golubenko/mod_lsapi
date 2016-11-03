@@ -189,7 +189,7 @@ void *lscapi_merge_dir_config(apr_pool_t *pool, void *BASE, void *CUR) {
                              cur->resend_if_crashed : base->resend_if_crashed;
     cfg->dir_accept_notify = cur->dir_accept_notify_was_set ?
                             cur->dir_accept_notify : base->dir_accept_notify;
-    
+
     if(cur->engine_off_was_set) {
         cfg->engine_off = cur->engine_off;
         cfg->engine_off_was_set = 1;
@@ -314,12 +314,13 @@ void *lscapi_merge_svr_config(apr_pool_t *pool, void *BASE, void *CUR) {
     cfg->tmpdir = cur->tmpdir ?
                   cur->tmpdir : base->tmpdir;
 
-    if(cur->phprc_auto_was_set) {
+    if(cur->phprc_source_was_set) {
         cfg->phprc = cur->phprc;
-        cfg->phprc_auto = cur->phprc_auto;
+        cfg->phprc_source = cur->phprc_source;
+        cfg->phprc_source_was_set = 1;
     } else {
         cfg->phprc = base->phprc;
-        cfg->phprc_auto = base->phprc_auto;
+        cfg->phprc_source = base->phprc_source;
     }
 
     cfg->selfstarter_socket_path = cur->selfstarter_socket_path ?
