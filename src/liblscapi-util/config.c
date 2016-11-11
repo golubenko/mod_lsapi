@@ -203,6 +203,7 @@ void *lscapi_merge_dir_config(apr_pool_t *pool, void *BASE, void *CUR) {
     __LSAPI_MERGE_DIR_CONFIG(resend_if_crashed);
     __LSAPI_MERGE_DIR_CONFIG(dir_accept_notify);
     __LSAPI_MERGE_DIR_CONFIG(engine_off);
+    __LSAPI_MERGE_DIR_CONFIG(measure_time);
     __LSAPI_MERGE_DIR_CONFIG(mod_php_behaviour_off);
     __LSAPI_MERGE_DIR_CONFIG(resend_if_method);
 

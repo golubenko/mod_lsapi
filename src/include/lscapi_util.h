@@ -156,11 +156,13 @@ struct lsapi_dir_conf_t {
     unsigned mod_php_behaviour_off: 1;
     unsigned dir_accept_notify: 1;
     unsigned engine_off: 1;
+    unsigned measure_time: 1;
     unsigned resend_if_crashed: 3; // up to 7 times (as 2³-1)
 
     unsigned mod_php_behaviour_off_was_set: 1;
     unsigned dir_accept_notify_was_set: 1;
     unsigned engine_off_was_set: 1;
+    unsigned measure_time_was_set: 1;
     unsigned resend_if_crashed_was_set: 1;
     unsigned resend_if_method_was_set: 1;
 
@@ -292,6 +294,18 @@ int lscapi_ungrab_sock_slot(server_rec *s, lsapi_connslot_info_t *slot_info);
 char* lscapi_make_fname_in_logdir(server_rec *s, apr_pool_t *pool, const char *fname);
 
 void lscapi_reset_http_error_state(request_rec *r);
+
+extern const char LSCAPI_MEASURE_REQUEST_GOT[];
+extern const char LSCAPI_MEASURE_CONN_ESTABLISHED[];
+extern const char LSCAPI_MEASURE_REQUEST_SENT[];
+extern const char LSCAPI_MEASURE_HEADER_GOT[];
+extern const char LSCAPI_MEASURE_RESPONSE_GOT[];
+
+void lscapi_write_measured_time(request_rec *r, const char *key);
+apr_status_t lscapi_get_measured_timedelta(request_rec *r, 
+                                           const char *key_from, const char *key_to, 
+                                           struct timeval *tv_delta);
+
 
 #endif //_LSCAPI_UTIL_H_
 

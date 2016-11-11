@@ -193,10 +193,8 @@ static int processHdrs(struct lscapi_http_hdrs_t *hdrs, const char *key, const c
       MODLS-231
       https://httpoxy.org 
       https://www.apache.org/security/asf-httpoxy-response.txt
-*/
-    if(strcasecmp(key, "Proxy") == 0
-      || strcasecmp(key, "Proxy-Authorization") == 0
-      || strcasecmp(key, "Authorization") == 0 ) return 1;
+    */
+    if(strcasecmp(key, "Proxy") == 0) return 1;
 
     hdrs->hdrs[hdrs->hdrNum].key = key;
     hdrs->hdrs[hdrs->hdrNum].val = value;

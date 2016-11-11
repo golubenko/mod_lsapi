@@ -534,6 +534,11 @@ apr_status_t lscapi_do_request(lscapi_rec *lscapi, lsphp_conn_t *backend, reques
         return r->status;
     }
 
+    if(dircfg->measure_time)
+    {
+        lscapi_write_measured_time(r, LSCAPI_MEASURE_REQUEST_SENT);
+    }
+
     if(eventMask & LSCAPI_BACKEND_LOG_RECEIVED) {
         if(eventMask & LSCAPI_BACKEND_LOG_FATAL) {
             lscapi_rlog(APLOG_ERR, 0, r, "Backend fatal error: %s", lscapi_get_backend_log(lscapi) );
@@ -551,6 +556,10 @@ apr_status_t lscapi_do_request(lscapi_rec *lscapi, lsphp_conn_t *backend, reques
         lscapi_set_recoverable_error(lscapi);
         SET_STATUS_WITH_LINE(r, dircfg->err_backend_recvhdr);  //HTTP_SERVICE_UNAVAILABLE
         return r->status;
+    }
+    if(dircfg->measure_time)
+    {
+        lscapi_write_measured_time(r, LSCAPI_MEASURE_HEADER_GOT);
     }
 
     if(eventMask & LSCAPI_BACKEND_LOG_RECEIVED) {
@@ -669,6 +678,10 @@ apr_status_t lscapi_do_request(lscapi_rec *lscapi, lsphp_conn_t *backend, reques
     if(rc != 0) {
         return r->status;
     }
+    if(dircfg->measure_time)
+    {
+        lscapi_write_measured_time(r, LSCAPI_MEASURE_RESPONSE_GOT);
+    }
 
     return OK;
 }
@@ -676,4 +689,32 @@ apr_status_t lscapi_do_request(lscapi_rec *lscapi, lsphp_conn_t *backend, reques
 void lscapi_reset_http_error_state(request_rec *r)
 {
     SET_STATUS_WITH_LINE(r, HTTP_OK);
+}
+
+
+const char LSCAPI_MEASURE_REQUEST_GOT[] = "lscapi-measure-request-got";
+const char LSCAPI_MEASURE_CONN_ESTABLISHED[] = "lscapi-measure-conn-established";
+const char LSCAPI_MEASURE_REQUEST_SENT[] = "lscapi-measure-request-sent";
+const char LSCAPI_MEASURE_HEADER_GOT[] = "lscapi-measure-header-got";
+const char LSCAPI_MEASURE_RESPONSE_GOT[] = "lscapi-measure-response-got";
+
+void lscapi_write_measured_time(request_rec *r, const char *key)
+{
+    struct timeval *tv = apr_palloc(r->pool, sizeof(struct timeval));
+    gettimeofday(tv, NULL);
+    apr_table_setn(r->notes, key, (char*)tv);
+}
+
+apr_status_t lscapi_get_measured_timedelta(request_rec *r, 
+                                           const char *key_from, const char *key_to, 
+                                           struct timeval *tv_delta)
+{
+    struct timeval *tv_from = (struct timeval *) apr_table_get(r->notes, key_from);
+    struct timeval *tv_to = (struct timeval *) apr_table_get(r->notes, key_to);
+    if(!tv_from || !tv_to)
+    {
+        return APR_ENOTIME;
+    }
+    timersub(tv_to, tv_from, tv_delta);
+    return APR_SUCCESS;
 }

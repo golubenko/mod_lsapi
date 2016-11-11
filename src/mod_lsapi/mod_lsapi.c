@@ -51,6 +51,7 @@ static apr_status_t connect_to_backend_impl(lsphp_conn_t *backend, request_rec *
 {
     apr_status_t status;
     lsapi_svr_conf_t *svrcfg = ap_get_module_config(r->server->module_config, &lsapi_module);
+    lsapi_dir_conf_t *dircfg = (lsapi_dir_conf_t*) ap_get_module_config(r->per_dir_config, &lsapi_module);
 
     int with_connpool = with_connection_pool;
     if(with_connpool != 0) {
@@ -81,6 +82,11 @@ static apr_status_t connect_to_backend_impl(lsphp_conn_t *backend, request_rec *
                 lscapi_ungrab_sock_slot(r->server, slotInfoPtr);
                 return -1;
             }
+            if(dircfg->measure_time)
+            {
+                lscapi_write_measured_time(r, LSCAPI_MEASURE_CONN_ESTABLISHED);
+            }
+
             slotInfoPtr->slot->sock = lscapi_lsphp_conn_get_socket(backend);
             slotInfoPtr->slot->is_open = 1;
 
@@ -95,7 +101,10 @@ static apr_status_t connect_to_backend_impl(lsphp_conn_t *backend, request_rec *
         if(status != 0) {
             return -1;
         }
-
+        if(dircfg->measure_time)
+        {
+            lscapi_write_measured_time(r, LSCAPI_MEASURE_CONN_ESTABLISHED);
+        }
     } // else of if(with_conpool != 0)
     
     return (with_connpool != 0);
@@ -261,6 +270,11 @@ static apr_status_t lsapi_handler(request_rec * r)
         return DECLINED;
     }
 
+    if(dircfg->measure_time)
+    {
+        lscapi_write_measured_time(r, LSCAPI_MEASURE_REQUEST_GOT);
+    }
+
     unsigned flags = 0;
     char errbuf[256];
     lscapi = lscapi_create_connection(r, backend_path, &flags, &status,
@@ -302,6 +316,43 @@ static apr_status_t lsapi_handler(request_rec * r)
         return dircfg->err_lsapi_conn_determine; //HTTP_SERVICE_UNAVAILABLE
      }
     status = talk_to_backend(backend, r, lscapi, svrcfg, dircfg);
+    if(status == OK && dircfg->measure_time)
+    {
+        struct timeval tv_overall;
+        struct timeval tv_connect;
+        struct timeval tv_reqsent;
+        struct timeval tv_hdrrecv;
+        struct timeval tv_resprecv;
+        
+        apr_status_t st_overall;
+        apr_status_t st_connect;
+        apr_status_t st_reqsent;
+        apr_status_t st_hdrrecv;
+        apr_status_t st_resprecv;
+
+        st_overall = lscapi_get_measured_timedelta(r, LSCAPI_MEASURE_REQUEST_GOT, LSCAPI_MEASURE_RESPONSE_GOT, &tv_overall);
+        st_connect = lscapi_get_measured_timedelta(r, LSCAPI_MEASURE_REQUEST_GOT, LSCAPI_MEASURE_CONN_ESTABLISHED, &tv_connect);
+        st_reqsent = lscapi_get_measured_timedelta(r, LSCAPI_MEASURE_CONN_ESTABLISHED, LSCAPI_MEASURE_REQUEST_SENT, &tv_reqsent);
+        st_hdrrecv = lscapi_get_measured_timedelta(r, LSCAPI_MEASURE_REQUEST_SENT, LSCAPI_MEASURE_HEADER_GOT, &tv_hdrrecv);
+        st_resprecv = lscapi_get_measured_timedelta(r, LSCAPI_MEASURE_HEADER_GOT, LSCAPI_MEASURE_RESPONSE_GOT, &tv_resprecv);
+        
+        if(st_overall == APR_SUCCESS
+           && st_connect == APR_SUCCESS
+           && st_reqsent == APR_SUCCESS
+           && st_hdrrecv == APR_SUCCESS
+           && st_resprecv == APR_SUCCESS)
+        {
+            ap_log_rerror(APLOG_MARK, APLOG_NOTICE, 0, r,
+                            PREFIX "[host %s] [req %s] timings: backend connect:%ld.%ld; req sent: %ld.%ld; hdr recv %ld.%ld; resp recv: %ld.%ld; overall: %ld.%ld", 
+                            r->hostname, r->the_request,
+                            tv_connect.tv_sec, tv_connect.tv_usec, 
+                            tv_reqsent.tv_sec, tv_reqsent.tv_usec, 
+                            tv_hdrrecv.tv_sec, tv_hdrrecv.tv_usec,
+                            tv_resprecv.tv_sec, tv_resprecv.tv_usec,
+                            tv_overall.tv_sec, tv_overall.tv_usec );
+        }
+
+    }
 
     lscapi_destroy(lscapi);
 
@@ -699,6 +750,14 @@ static const char *lsapi_engine_handler(cmd_parms *cmd, void *CFG, const char *v
     lsapi_dir_conf_t* cfg = (lsapi_dir_conf_t*)CFG;
     cfg->engine_off = ( strcasecmp(value, "off") == 0 );
     cfg->engine_off_was_set = 1;
+    
+    return NULL;
+}
+
+static const char *lsapi_measure_time_handler(cmd_parms *cmd, void *CFG, const char *value) {
+    lsapi_dir_conf_t* cfg = (lsapi_dir_conf_t*)CFG;
+    cfg->measure_time = ( strcasecmp(value, "on") == 0 );
+    cfg->measure_time_was_set = 1;
     
     return NULL;
 }
@@ -1220,6 +1279,7 @@ static const command_rec config_directives[] = {
     AP_INIT_TAKE2("lsapi_error_code", lsapi_error_code_handler, NULL, RSRC_CONF | ACCESS_CONF,
                   "Error codes used in response to client"),
     AP_INIT_TAKE1("lsapi_engine", lsapi_engine_handler, NULL, OR_OPTIONS, "Switching mod_lsapi handler on or off."),
+    AP_INIT_TAKE1("lsapi_measure_time", lsapi_measure_time_handler, NULL, OR_OPTIONS, "Switching process time measurement on or off."),
 
     /*
      * SU PHP param will be used too as fallback
