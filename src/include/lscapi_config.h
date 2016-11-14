@@ -17,7 +17,7 @@
 
 #define MOD_LSAPI_VERSION_MAJOR     "1"
 #define MOD_LSAPI_VERSION_MINOR     "0"
-#define MOD_LSAPI_VERSION_RELEASE   "20"
+#define MOD_LSAPI_VERSION_RELEASE   "21"
 
 #endif // _LSCAPI_CONFIG_H_
 

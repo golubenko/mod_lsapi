@@ -329,8 +329,10 @@ void lscapi_set_domain(lscapi_rec *lscapi,
 
 void lscapi_set_tmpdir(lscapi_rec *lscapi, const char *tmpdir);
 
+/*
+DEPRECATED
+*/
 const char* lscapi_get_backend_log(lscapi_rec *lscapi);
-
 
 // lsphp stuff
 
