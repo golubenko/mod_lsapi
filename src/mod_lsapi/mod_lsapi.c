@@ -838,6 +838,13 @@ static const char *lsapi_backend_use_own_log_handler(cmd_parms *cmd, void *CFG, 
     return NULL;
 }
 
+static const char *lsapi_enable_user_ini_handler(cmd_parms *cmd, void *CFG, const char *value) {
+    lsapi_svr_conf_t *cfg = ap_get_module_config(cmd->server->module_config, &lsapi_module);
+    cfg->backend_info.enable_user_ini = ( strcasecmp(value, "on") == 0 );
+    cfg->backend_info.enable_user_ini_was_set = 1;
+    return NULL;
+}
+
 static const char *lsapi_per_user_handler(cmd_parms *cmd, void *CFG, const char *value) {
     lsapi_svr_conf_t *cfg = ap_get_module_config(cmd->server->module_config, &lsapi_module);
     cfg->backend_info.per_user = ( strcasecmp(value, "on") == 0 );
@@ -1259,6 +1266,7 @@ static const command_rec config_directives[] = {
     // Not documented
     AP_INIT_TAKE1("lsapi_hostname_on_debug", lsapi_hostname_on_debug_handler, NULL, RSRC_CONF, "Dump or not failed response header"),
 #endif
+    AP_INIT_TAKE1("lsapi_enable_user_ini", lsapi_enable_user_ini_handler, NULL, RSRC_CONF, "Enable user ini files for backend"),
     AP_INIT_TAKE1("lsapi_per_user", lsapi_per_user_handler, NULL, RSRC_CONF, "Invoke backend not per VirtualHost but per account"),
 #ifdef WITH_CRIU
     AP_INIT_TAKE1("lsapi_criu", lsapi_criu_handler, NULL, RSRC_CONF, "Use or not criu"),

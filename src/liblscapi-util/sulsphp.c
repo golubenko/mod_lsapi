@@ -624,12 +624,10 @@ void lscapi_spawn_lsphp(server_rec *s, spawn_info_t *spawn_info, int log_sock)
 
     char real_pw_storage[16384];
     char target_pw_storage[16384];
-    char target_gr_storage[16384];
     struct passwd real_pw;
     struct passwd target_pw;
-    struct group target_gr;
+    struct group *target_gr_ptr;
     struct passwd *indicator_pw;
-    struct group *indicator_gr; 
 
     /* inherited sigmask can be very confused */
     set_signals();
@@ -782,23 +780,15 @@ void lscapi_spawn_lsphp(server_rec *s, spawn_info_t *spawn_info, int log_sock)
         exit(112);
     }
 
-    rc = getgrgid_r(target_gid, &target_gr, target_gr_storage, sizeof target_gr_storage, &indicator_gr);
-    if(rc != 0)
+    target_gr_ptr = getgrgid(target_gid);
+    if(target_gr_ptr == NULL)
     {
         starter_log_error(s, rc, "%s could not get target group info:%d", prefix, target_gid);
         dl_clean_all_lve();
         exit(114);
     }
 
-    if(indicator_gr == NULL)
-    {
-        starter_log_error(s, -1, "%s invalid target group id:%d", prefix, target_gid);
-        dl_clean_all_lve();
-        exit(114);
-    }
-
-
-    if ((actual_gname = strdup(target_gr.gr_name)) == NULL) {
+    if ((actual_gname = strdup(target_gr_ptr->gr_name)) == NULL) {
         starter_log_error(s, -1, "%s uid:%u; gid:%u; failed to alloc memory", prefix,
                           target_uid, target_gid);
         dl_clean_all_lve();

@@ -169,11 +169,13 @@ struct lscapi_backend_info_t {
     unsigned backend_coredump: 1;
     unsigned dump_backend_debug_info: 1;
     unsigned use_suexec: 1;
+    unsigned enable_user_ini: 1;
     unsigned per_user: 1;
 
     unsigned backend_coredump_was_set: 1;
     unsigned dump_backend_debug_info_was_set: 1;
     unsigned use_suexec_was_set: 1;
+    unsigned enable_user_ini_was_set: 1;
     unsigned per_user_was_set: 1;
 
     /*
@@ -193,6 +195,7 @@ typedef struct lscapi_backend_info_t lscapi_backend_info_t;
 
 
 #define LSCAPI_PATH_MAX 64
+#define LSCAPI_PHPRC_MAX 128
 /*
  struct sockaddr_un in <sys/un.h> contains integer constant
  instead of promised by unix(7) UNIX_PATH_MAX
@@ -217,7 +220,8 @@ typedef struct spawn_info_t {
         only when compiled with -DWITH_CRIU flag
     */
     unsigned use_criu: 1;
-    char phprc[LSCAPI_PATH_MAX];
+    unsigned enable_user_ini: 1;
+    char phprc[LSCAPI_PHPRC_MAX];
     char cmd[LSCAPI_PATH_MAX];
     char socket_name[LSCAPI_SOCKET_MAX];
     /*
@@ -233,9 +237,14 @@ typedef pid_t (*lscapi_spawn_backend_fn)(const spawn_info_t *spawn_info,
                                          void *user_data, int force_start);
 
 // Event masks
+
+// DEPRECATED
 #define LSCAPI_BACKEND_LOG_RECEIVED    (1u << 0)
 #define LSCAPI_RESPONSE_FINISHED       (1u << 1)
+
+// DEPRECATED
 #define LSCAPI_BACKEND_LOG_FATAL       (1u << 2)
+
 #define LSCAPI_SENDREQ_INTERNAL_ERROR  (1u << 3)
 #define LSCAPI_SENDREQ_BACKEND_ERROR   (1u << 4)
 #define LSCAPI_SENDREQ_CLIENT_ERROR    (1u << 5)

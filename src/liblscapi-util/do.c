@@ -261,32 +261,6 @@ static const char* lsapi_get_status_line_with_null(int status)
     return n == LSAPI_RESPONSE_CODE_UNKNOWN ? NULL : status_lines[n];
 }
 
-
-static void lsapi_print_backend_log(lscapi_rec *lscapi, request_rec *r, unsigned eventMask)
-{
-    const char *prefix;
-    const char *log;
-    int logLevel;
-    if(eventMask & LSCAPI_BACKEND_LOG_FATAL)
-    {
-        prefix = "Backend fatal error";
-        logLevel = APLOG_ERR;
-    } else
-    {
-        prefix = "Backend log";
-        logLevel = APLOG_NOTICE;
-    }
-    
-    while(1)
-    {
-        log = lscapi_get_backend_log(lscapi);
-        if(!log || log[0] == '\0')
-            break;
-        lscapi_rlog(logLevel, 0, r, "%s: %s", prefix, log );
-    }
-
-}
-
 #define SET_STATUS_WITH_LINE(r, st)  do { (r)->status = (st); (r)->status_line = lsapi_get_status_line((r)->status); } while(0)
 
 static int read_from_backend(lscapi_rec *lscapi, lsphp_conn_t *backend, request_rec *r,
@@ -316,10 +290,6 @@ static int read_from_backend(lscapi_rec *lscapi, lsphp_conn_t *backend, request_
                 SET_STATUS_WITH_LINE(r, dircfg->err_backend_recvrsp);  //HTTP_SERVICE_UNAVAILABLE
             }
             return -1;
-        }
-
-        if(eventMask & LSCAPI_BACKEND_LOG_RECEIVED) {
-            lsapi_print_backend_log(lscapi, r, eventMask);
         }
 
         if(eventMask & LSCAPI_RESPONSE_FINISHED) {
@@ -561,10 +531,6 @@ apr_status_t lscapi_do_request(lscapi_rec *lscapi, lsphp_conn_t *backend, reques
         lscapi_write_measured_time(r, LSCAPI_MEASURE_REQUEST_SENT);
     }
 
-    if(eventMask & LSCAPI_BACKEND_LOG_RECEIVED) {
-        lsapi_print_backend_log(lscapi, r, eventMask);
-    }
-
     lscapi_resphdr_info_t hdrsInfo;
 
     eventMask = 0;
@@ -578,10 +544,6 @@ apr_status_t lscapi_do_request(lscapi_rec *lscapi, lsphp_conn_t *backend, reques
     if(dircfg->measure_time)
     {
         lscapi_write_measured_time(r, LSCAPI_MEASURE_HEADER_GOT);
-    }
-
-    if(eventMask & LSCAPI_BACKEND_LOG_RECEIVED) {
-        lsapi_print_backend_log(lscapi, r, eventMask);
     }
 
     char scan_buffer[MAX_STRING_LEN];
@@ -715,6 +677,7 @@ const char LSCAPI_MEASURE_RESPONSE_GOT[] = "lscapi-measure-response-got";
 void lscapi_write_measured_time(request_rec *r, const char *key)
 {
     struct timeval *tv = apr_palloc(r->pool, sizeof(struct timeval));
+    if(!tv) return;
     gettimeofday(tv, NULL);
     apr_table_setn(r->notes, key, (char*)tv);
 }
